@@ -83,4 +83,7 @@ It destroys the snapshots that it created
 It creates a snapshot on MyBackup
 It exports the MyBackup pool
 
-You may now swap the drive and take it off site.
+You may do this backup at any time. Rsync is not copying your live data its copying a snapshot clone.
+However I think it's best to run as a cron job at 3 a.m. or so.
+
+You may now swap the backup drive and take it off site.
