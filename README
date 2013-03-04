@@ -1,25 +1,23 @@
 ZFS-Geek-Backup
 
-Using rsync and zfs snapshots you can do incremental backups to removeable drives. Each drive
-will have a full backup and incremental backups (snapshots).
+Using rsync and zfs snapshots you can do incremental backups to removeable drives. Each drive will have a full backup and incremental backups (snapshots).
 
 So that you can better understand how it works I will explain my system then you can adapt to yours.
 
-I have a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives.Each
-of the five drives has been configured as a zfs pool named MyBackup.
+I use a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives.Each of the five drives has been configured as a zfs pool named MyBackup.
 
 I have a NAS4Free system with one pool:
-pool: My320POOL
+pool:  My320POOL
 state: ONLINE
-scan: scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
+scan:  scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
 config:
 My320POOL   ONLINE       0     0     0
-mirror-0  ONLINE       0     0     0
-ada1    ONLINE       0     0     0
-ada0    ONLINE       0     0     0
+mirror-0    ONLINE       0     0     0
+ada1        ONLINE       0     0     0
+ada0        ONLINE       0     0     0
 errors: No known data errors
 
-I have created several Datasets
+I have created several Datasets:
 NAME USED AVAIL  REFER  MOUNTPOINT
 My320POOL           184G   110G  44.5K  /mnt/My320POOL
 My320POOL/data     1.48G   110G  1.47G  /mnt/My320POOL/data
@@ -28,18 +26,14 @@ My320POOL/music    7.62G   110G  7.62G  /mnt/My320POOL/music
 My320POOL/photo    14.5G   110G  14.5G  /mnt/My320POOL/photo
 My320POOL/video     149G   110G   149G  /mnt/My320POOL/video
 
-While I could backup all Datasets I am only interested in backing up some of them.
-
-Look in the backup script for this variable:
+Choose which datasets to backup:
 DATASETS=('data' 'photo') // Backup data and photo
-
 Other Examples:
 DATASETS=('photo') // Just photo
 DATASETS=('data' 'install' 'music' 'photo' 'video') // All my datasets
 
 The only other change you'll need to make is:
 SOURCEPOOL=My320POOL
-
 Example:
 SOURCEPOOL=TANK
 
@@ -83,7 +77,6 @@ It destroys the snapshots that it created
 It creates a snapshot on MyBackup
 It exports the MyBackup pool
 
-You may do this backup at any time. Rsync is not copying your live data its copying a snapshot clone.
-However I think it's best to run as a cron job at 3 a.m. or so.
+You may do this backup at any time. Rsync is not copying your live data its copying a snapshot clone. However I think it's best to run as a cron job at 3 a.m. or so.
 
 You may now swap the backup drive and take it off site.
