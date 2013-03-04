@@ -4,7 +4,7 @@ Using rsync and zfs snapshots you can do incremental backups to removeable drive
 
 So that you can better understand how it works I will explain my system then you can adapt to yours.
 
-I use a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives.Each of the five drives has been configured as a zfs pool named MyBackup.
+I use a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives. Each of the five drives has been configured as a zfs pool named MyBackup.
 
 I have a NAS4Free system with one pool:
 pool:  My320POOL
@@ -67,9 +67,9 @@ Overview of what happens:
 You plug in one of the backup drives and the system sees it as a device but zfs ignores it.
 You (or cron) run the backup script.
 It imports the MyBackup pool
-It creates a new dataset named myclone
-It makes a snapshot for each dataset
-It makes a clone of each snapshot under myclone eg: myclone/photo
+It creates a temporary dataset named myclone
+It makes temporary snapshots of selected datasets eg: DATASETS=('data' 'photo')
+It makes a temporary clone of each snapshot under myclone eg: myclone/photo
 It rsyncs the incremental changes from myclone to MyBackup
 It destroys the clones that it created
 It destroys the myclone dataset that it created
