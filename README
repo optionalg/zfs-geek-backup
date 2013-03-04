@@ -1,7 +1,10 @@
 ZFS-Geek-Backup
-Summary: Using rsync and zfs snapshots you can do incremental backups to removeable drives.
+
+Summary:
+Using rsync and zfs snapshots you can do incremental backups to removeable drives.
 So that you can better understand how it works I will explain my system then you can adapt to yours.
-I have a brand new NAS4Free system with one pool:
+
+I have a NAS4Free system with one pool:
 pool: My320POOL
 state: ONLINE
 scan: scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
@@ -23,13 +26,13 @@ My320POOL/video     149G   110G   149G  /mnt/My320POOL/video
 
 While I could backup all Datasets I am only interested in backing up some of them.
 
-Look in the backup script and find:
+Look in the backup script for this variable:
 DATASETS=('data' 'photo')
 
-if I wanted to add music to my backup I would make a change like this:
+to backup music too make a change like this:
 DATASETS=('data' 'photo' 'music')
 
-other than that the only other change you need to make is:
+other than that the only other change you'll need to make is:
 SOURCEPOOL=My320POOL
 
 
@@ -51,4 +54,3 @@ Add yet another drive to your collection of backup drives:
   zpool export MyBackup
   
   *It's da1 on my machine but will likely be something else on yours
-
