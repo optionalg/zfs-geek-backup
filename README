@@ -4,6 +4,9 @@ Summary:
 Using rsync and zfs snapshots you can do incremental backups to removeable drives.
 So that you can better understand how it works I will explain my system then you can adapt to yours.
 
+I have a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives.Each
+of the five drives has been configured as a zfs pool named MyBackup.
+
 I have a NAS4Free system with one pool:
 pool: My320POOL
 state: ONLINE
@@ -27,13 +30,17 @@ My320POOL/video     149G   110G   149G  /mnt/My320POOL/video
 While I could backup all Datasets I am only interested in backing up some of them.
 
 Look in the backup script for this variable:
-DATASETS=('data' 'photo')
+DATASETS=('data' 'photo') // Backup data and photo
 
-to backup music too make a change like this:
-DATASETS=('data' 'photo' 'music')
+Other Examples:
+DATASETS=('photo') // Just photo
+DATASETS=('data' 'install' 'music' 'photo' 'video') // All my datasets
 
-other than that the only other change you'll need to make is:
+The only other change you'll need to make is:
 SOURCEPOOL=My320POOL
+
+Example:
+SOURCEPOOL=TANK
 
 
 NOTES N' TIPS
@@ -43,7 +50,7 @@ Get rid of all snapshots on MyBackup:
   zfs list -H -o name -t snapshot | grep MyBackup | xargs -n1 zfs destroy
   zpool export MyBackup
 
-Get a clean start on a backup drive:
+Get a clean start on an existing MyBackup drive:
   zpool import MyBackup
   zpool destroy MyBackup
   zpool create MyBackup da1
@@ -54,3 +61,7 @@ Add yet another drive to your collection of backup drives:
   zpool export MyBackup
   
   *It's da1 on my machine but will likely be something else on yours
+
+You may run the backup at anytime:
+./zfs-geek-backup.sh
+./zfs-geek-backup.sh -q  //quiet, only errors will output
