@@ -1,7 +1,8 @@
 ZFS-Geek-Backup
 
-Summary:
-Using rsync and zfs snapshots you can do incremental backups to removeable drives.
+Using rsync and zfs snapshots you can do incremental backups to removeable drives. Each drive
+will have a full backup and incremental backups (snapshots).
+
 So that you can better understand how it works I will explain my system then you can adapt to yours.
 
 I have a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives.Each
@@ -65,3 +66,21 @@ Add yet another drive to your collection of backup drives:
 You may run the backup at anytime:
 ./zfs-geek-backup.sh
 ./zfs-geek-backup.sh -q  //quiet, only errors will output
+
+
+Overview of what happens:
+
+You plug in one of the backup drives and the system sees it as a device but zfs ignores it.
+You (or cron) run the backup script.
+It imports the MyBackup pool
+It creates a new dataset named myclone
+It makes a snapshot for each dataset
+It makes a clone of each snapshot under myclone eg: myclone/photo
+It rsyncs the incremental changes from myclone to MyBackup
+It destroys the clones that it created
+It destroys the myclone dataset that it created
+It destroys the snapshots that it created
+It creates a snapshot on MyBackup
+It exports the MyBackup pool
+
+You may now swap the drive and take it off site.
