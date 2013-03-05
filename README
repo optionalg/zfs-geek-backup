@@ -40,6 +40,12 @@ SOURCEPOOL=TANK
 
 NOTES N' TIPS
 
+See what you have on a backup drive:
+  zpool import MyBackup
+  zfs list -H -o name -t snapshot | grep MyBackup
+  ls /mnt/MyBackup/.zfs/snapshot
+  zpool export MyBackup
+
 Get rid of all snapshots on MyBackup:
   zpool import MyBackup
   zfs list -H -o name -t snapshot | grep MyBackup | xargs -n1 zfs destroy
@@ -64,17 +70,17 @@ You may run the backup at anytime:
 
 Overview of what happens:
 
-You plug in one of the backup drives and the system sees it as a device but zfs ignores it.
+You plug in one of the backup drives and your system sees it as a device but zfs ignores it.
 You (or cron) run the backup script.
 It imports the MyBackup pool
-It creates a temporary dataset named myclone
+It creates a temporary dataset named TEMPzfsGEEKbackup
 It makes temporary snapshots of selected datasets eg: DATASETS=('data' 'photo')
-It makes a temporary clone of each snapshot under myclone eg: myclone/photo
-It rsyncs the incremental changes from myclone to MyBackup
+It makes a temporary clone of each snapshot under TEMPzfsGEEKbackup eg: TEMPzfsGEEKbackup/photo
+It rsyncs the incremental changes from TEMPzfsGEEKbackup to MyBackup
 It destroys the clones that it created
-It destroys the myclone dataset that it created
-It destroys the snapshots that it created
-It creates a snapshot on MyBackup
+It destroys the TEMPzfsGEEKbackup dataset that it created
+It destroys the temporary snapshots that it created
+It creates a snapshot on MyBackup eg: MyBackup@2013-03-05_01h52m48s
 It exports the MyBackup pool
 
 You may do this backup at any time. Rsync is not copying your live data its copying a snapshot clone. However I think it's best to run as a cron job at 3 a.m. or so.
