@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# zfs-geek-backup v0.01
+# zfs-geek-backup v0.02
 
 : '===============================================================
 This program is free software: you can redistribute it and/or modify
