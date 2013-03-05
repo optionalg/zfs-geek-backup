@@ -17,34 +17,41 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/
 =================================================================='
 
-# Edit these variables to suit your setup
-MYMOUNTPOINT=/mnt
-TARGETPOOL=MyBackup
+# Change these variables to suit your configuration
 SOURCEPOOL=My320POOL
 DATASETS=('data' 'photo')
-# No changes below this line
 
+
+# These variables should work as is
+MYMOUNTPOINT=/mnt
+TARGETPOOL=MyBackup
 NOW=$(date +"%Y-%m-%d_%Hh%Mm%Ss")
 RSYNCOPTIONS="-rtv"
 VERBOSE=1
 
-function TEMPzfsGEEKbackupCleanup {
-  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup/ | xargs -n1 zfs destroy
-  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup | xargs -n1 zfs destroy
-  MyEcho "$? - zfs destroy -r $SOURCEPOOL/TEMPzfsGEEKbackup"
+
+# No changes below this line
+# ====================================================
+
+function TEMPzfsGEEKdatasetCleanup {
+  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKdataset/ | xargs -n1 zfs destroy
+  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKdataset | xargs -n1 zfs destroy
+  MyEcho "$? - zfs destroy -r $SOURCEPOOL/TEMPzfsGEEKdataset"
   zfs list -H -o name -t snapshot | grep TEMPzfsGEEKsnapshot | xargs -n1 zfs destroy
   MyEcho "$? - zfs destroy TEMPzfsGEEKsnapshot"
 }
 
-function TEMPzfsGEEKbackupCreate {
-  zfs create $SOURCEPOOL/TEMPzfsGEEKbackup
-  MyEcho "$? - zfs create $SOURCEPOOL/TEMPzfsGEEKbackup"
+function TEMPzfsGEEKdatasetCreate {
+  zfs create $SOURCEPOOL/TEMPzfsGEEKdataset
+  MyEcho "$? - zfs create $SOURCEPOOL/TEMPzfsGEEKdataset"
   for t in ${DATASETS[@]}
   do
     zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot
+    test "$?" -ne "0" && echo "Failed: zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot" && exit 1
     MyEcho "$? - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
-    zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t
-    MyEcho "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t"
+    zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t
+    test "$?" -ne "0" && echo "Failed: zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t" && exit 1
+    MyEcho "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t"
   done
 }
 
@@ -63,7 +70,7 @@ MyEcho "zfs-geek-backup"
 MyEcho "================"
 MyEcho ""
 MyEcho "Cleanup. Just in case the previous backup crashed and left a mess."
-TEMPzfsGEEKbackupCleanup
+TEMPzfsGEEKdatasetCleanup
 MyEcho ""
 MyEcho "Looking for $TARGETPOOL please wait..."
 MyEcho ""
@@ -76,22 +83,22 @@ MyEcho ""
     zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL && \
     MyEcho "$? - zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL"
 
-TEMPzfsGEEKbackupCreate
+TEMPzfsGEEKdatasetCreate
 
 MyEcho ""
 MyEcho ""
-MyEcho "rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKbackup/ $TARGETPOOL"
-rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKbackup/ $TARGETPOOL
+MyEcho "rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKdataset/ $TARGETPOOL"
+rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKdataset/ $TARGETPOOL
 MyEcho ""
 MyEcho ""
 
 zfs snapshot $TARGETPOOL@$NOW
 MyEcho "$? - zfs snapshot $TARGETPOOL@$NOW"
 
-TEMPzfsGEEKbackupCleanup
+TEMPzfsGEEKdatasetCleanup
 
-zfs set mountpoint=/mnt/MyBackup $TARGETPOOL
-MyEcho "$? - zfs set mountpoint=/mnt/MyBackup $TARGETPOOL"
+zfs set mountpoint=/mnt/$TARGETPOOL $TARGETPOOL
+MyEcho "$? - zfs set mountpoint=/mnt/$TARGETPOOL $TARGETPOOL"
 
 zpool export $TARGETPOOL
 MyEcho "$? - zpool export $TARGETPOOL"
