@@ -31,64 +31,70 @@ VERBOSE=1
 function TEMPzfsGEEKbackupCleanup {
   zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup/ | xargs -n1 zfs destroy
   zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup | xargs -n1 zfs destroy
-  echo "$? - zfs destroy -r $SOURCEPOOL/TEMPzfsGEEKbackup"
+  MyEcho "$? - zfs destroy -r $SOURCEPOOL/TEMPzfsGEEKbackup"
   zfs list -H -o name -t snapshot | grep TEMPzfsGEEKsnapshot | xargs -n1 zfs destroy
-  echo "$? - zfs destroy TEMPzfsGEEKsnapshot"
+  MyEcho "$? - zfs destroy TEMPzfsGEEKsnapshot"
 }
 
 function TEMPzfsGEEKbackupCreate {
   zfs create $SOURCEPOOL/TEMPzfsGEEKbackup
-  echo "$? - zfs create $SOURCEPOOL/TEMPzfsGEEKbackup"
+  MyEcho "$? - zfs create $SOURCEPOOL/TEMPzfsGEEKbackup"
   for t in ${DATASETS[@]}
   do
     zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot
-    echo "$? - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+    MyEcho "$? - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
     zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t
-    echo "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t"
+    MyEcho "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t"
   done
 }
 
-cd $MYMOUNTPOINT
-echo ""
+function MyEcho {
+  test "$VERBOSE" -gt "0" && echo "$1"
+}
 
-[ "$1" ] && DRYRUN="--dry-run"
+cd $MYMOUNTPOINT
+
+[ "$1" == "--dry-run" ] && DRYRUN="--dry-run"
 [ "$1" == "-q" ] && RSYNCOPTIONS="-rt" && VERBOSE=0 && DRYRUN=""
 
 
+MyEcho "================"
+MyEcho "zfs-geek-backup"
+MyEcho "================"
+MyEcho ""
+MyEcho "Cleanup. Just in case the previous backup crashed and left a mess."
 TEMPzfsGEEKbackupCleanup
- 
+MyEcho ""
+MyEcho "Looking for $TARGETPOOL please wait..."
+MyEcho ""
 
-echo ""
-[ $VERBOSE -ne 0 ] && echo "Looking for $TARGETPOOL please wait."
-echo ""
-
-[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && zpool import $TARGETPOOL 2>/dev/null && echo "$? - zpool import $TARGETPOOL"
-[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && echo "zpool \"${TARGETPOOL}\" not found!" && exit 1
-[ ! -d $MYMOUNTPOINT/$TARGETPOOL ] && mkdir $MYMOUNTPOINT/$TARGETPOOL && echo "$? - mkdir $MYMOUNTPOINT/$TARGETPOOL"
+[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && zpool import $TARGETPOOL 2>/dev/null && MyEcho "$? - zpool import $TARGETPOOL"
+[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && echo "Failed: zpool import $TARGETPOOL" && exit 1
+[ ! -d $MYMOUNTPOINT/$TARGETPOOL ] && mkdir $MYMOUNTPOINT/$TARGETPOOL && MyEcho "$? - mkdir $MYMOUNTPOINT/$TARGETPOOL"
 
 [ `stat -nq -f %d "$TARGETPOOL"` == `stat -nq -f %d "$TARGETPOOL/.."` ] && \
     zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL && \
-    echo "$? - zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL"
+    MyEcho "$? - zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL"
 
 TEMPzfsGEEKbackupCreate
 
-echo ""
-echo ""
-echo "Running Rsync..."
+MyEcho ""
+MyEcho ""
+MyEcho "rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKbackup/ $TARGETPOOL"
 rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKbackup/ $TARGETPOOL
-echo ""
-echo ""
+MyEcho ""
+MyEcho ""
 
 zfs snapshot $TARGETPOOL@$NOW
-echo "$? - zfs snapshot $TARGETPOOL@$NOW"
+MyEcho "$? - zfs snapshot $TARGETPOOL@$NOW"
 
 TEMPzfsGEEKbackupCleanup
 
 zfs set mountpoint=/mnt/MyBackup $TARGETPOOL
-echo "$? - zfs set mountpoint=/mnt/MyBackup $TARGETPOOL"
+MyEcho "$? - zfs set mountpoint=/mnt/MyBackup $TARGETPOOL"
 
 zpool export $TARGETPOOL
-echo "$? - zpool export $TARGETPOOL"
+MyEcho "$? - zpool export $TARGETPOOL"
 
-echo ""
+MyEcho ""
 exit 0
