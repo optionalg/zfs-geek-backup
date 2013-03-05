@@ -22,71 +22,73 @@ MYMOUNTPOINT=/mnt
 TARGETPOOL=MyBackup
 SOURCEPOOL=My320POOL
 DATASETS=('data' 'photo')
+# No changes below this line
+
 NOW=$(date +"%Y-%m-%d_%Hh%Mm%Ss")
 RSYNCOPTIONS="-rtv"
 VERBOSE=1
-# No changes below this line
 
-
-function DidItFail {
-  [ $? -ne 0 ] && echo "Failed: $1" && exit $?
-  [ $VERBOSE -ne 0 ] && echo "$1  [OK!]"
+function TEMPzfsGEEKbackupCleanup {
+  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup/ | xargs -n1 zfs destroy
+  zfs list -H -o name -t filesystem | grep TEMPzfsGEEKbackup | xargs -n1 zfs destroy
+  echo "$? - zfs destroy -r $SOURCEPOOL/TEMPzfsGEEKbackup"
+  zfs list -H -o name -t snapshot | grep TEMPzfsGEEKsnapshot | xargs -n1 zfs destroy
+  echo "$? - zfs destroy TEMPzfsGEEKsnapshot"
 }
 
-function MyCloneCreate {
-  zfs create $SOURCEPOOL/myclone
-  DidItFail "zfs create $SOURCEPOOL/myclone"
+function TEMPzfsGEEKbackupCreate {
+  zfs create $SOURCEPOOL/TEMPzfsGEEKbackup
+  echo "$? - zfs create $SOURCEPOOL/TEMPzfsGEEKbackup"
   for t in ${DATASETS[@]}
   do
-    zfs snapshot $SOURCEPOOL/$t@rsync
-    DidItFail "zfs snapshot $SOURCEPOOL/$t@rsync"
-    zfs clone $SOURCEPOOL/$t@rsync $SOURCEPOOL/myclone/$t
-    DidItFail "zfs clone $SOURCEPOOL/$t@rsync $SOURCEPOOL/myclone/$t"
+    zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot
+    echo "$? - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+    zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t
+    echo "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKbackup/$t"
   done
-}
-
-function MyCloneDestroy {
-  for t in ${DATASETS[@]}
-  do
-    zfs destroy $SOURCEPOOL/myclone/$t
-    DidItFail "zfs destroy $SOURCEPOOL/myclone/$t"
-    zfs destroy $SOURCEPOOL/$t@rsync
-    DidItFail "zfs destroy $SOURCEPOOL/$t@rsync"
-  done
-  zfs destroy $SOURCEPOOL/myclone
-  DidItFail "zfs destroy $SOURCEPOOL/myclone"
 }
 
 cd $MYMOUNTPOINT
+echo ""
 
 [ "$1" ] && DRYRUN="--dry-run"
 [ "$1" == "-q" ] && RSYNCOPTIONS="-rt" && VERBOSE=0 && DRYRUN=""
 
-[ $VERBOSE -ne 0 ] && echo "Looking for $TARGETPOOL please wait."
 
-[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && zpool import $TARGETPOOL 2>/dev/null && DidItFail "zpool import $TARGETPOOL"
+TEMPzfsGEEKbackupCleanup
+ 
+
+echo ""
+[ $VERBOSE -ne 0 ] && echo "Looking for $TARGETPOOL please wait."
+echo ""
+
+[ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && zpool import $TARGETPOOL 2>/dev/null && echo "$? - zpool import $TARGETPOOL"
 [ ! "$(zpool list -H | egrep -w "^${TARGETPOOL}" | awk '{print $1}')" ] && echo "zpool \"${TARGETPOOL}\" not found!" && exit 1
-[ ! -d $MYMOUNTPOINT/$TARGETPOOL ] && mkdir $MYMOUNTPOINT/$TARGETPOOL && DidItFail "mkdir $MYMOUNTPOINT/$TARGETPOOL"
+[ ! -d $MYMOUNTPOINT/$TARGETPOOL ] && mkdir $MYMOUNTPOINT/$TARGETPOOL && echo "$? - mkdir $MYMOUNTPOINT/$TARGETPOOL"
 
 [ `stat -nq -f %d "$TARGETPOOL"` == `stat -nq -f %d "$TARGETPOOL/.."` ] && \
     zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL && \
-    DidItFail "zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL"
+    echo "$? - zfs set mountpoint=$MYMOUNTPOINT/$TARGETPOOL $TARGETPOOL"
 
-MyCloneCreate
+TEMPzfsGEEKbackupCreate
 
-rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/myclone/ $TARGETPOOL
-DidItFail "Rsync finished"
-
-MyCloneDestroy
+echo ""
+echo ""
+echo "Running Rsync..."
+rsync $RSYNCOPTIONS --delete $DRYRUN $SOURCEPOOL/TEMPzfsGEEKbackup/ $TARGETPOOL
+echo ""
+echo ""
 
 zfs snapshot $TARGETPOOL@$NOW
-DidItFail "zfs snapshot $TARGETPOOL@$NOW"
+echo "$? - zfs snapshot $TARGETPOOL@$NOW"
+
+TEMPzfsGEEKbackupCleanup
 
 zfs set mountpoint=/mnt/MyBackup $TARGETPOOL
-DidItFail "zfs set mountpoint=/mnt/MyBackup $TARGETPOOL"
+echo "$? - zfs set mountpoint=/mnt/MyBackup $TARGETPOOL"
 
 zpool export $TARGETPOOL
-DidItFail "zpool export $TARGETPOOL"
+echo "$? - zpool export $TARGETPOOL"
 
+echo ""
 exit 0
-
