@@ -64,8 +64,9 @@ Add yet another drive to your collection of backup drives:
   *It's da1 on my machine but will likely be something else on yours
 
 You may run the backup at anytime:
-./zfs-geek-backup.sh
+./zfs-geek-backup.sh     //not so quiet
 ./zfs-geek-backup.sh -q  //quiet, only errors will output
+./zfs-geek-backup.sh --dry-run  //adds --dry-run to the rsync commandline
 
 
 Overview of what happens:
