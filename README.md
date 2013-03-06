@@ -1,10 +1,10 @@
-ZFS-Geek-Backup
+# ZFS-Geek-Backup #
 
-Using rsync and zfs snapshots you can do incremental backups to removeable drives. Each drive will have a full backup and incremental backups (snapshots).
+Using rsync and ZFS snapshots you can do incremental backups to removable drives. Each drive will have a full image and snapshots.
 
-So that you can better understand how it works I will explain my system then you can adapt to yours.
+# My setup #
 
-I use a hard drive dock http://www.google.ca/search?q=hard+drive+dock and 5 old used hard drives. Each of the five drives has been configured as a zfs pool named MyBackup.
+I use a [hard drive dock](http://www.google.ca/search?q=hard+drive+dock) and 5 old used hard drives. Each of the five drives has been configured as a zfs pool named MyBackup.
 
 I have a NAS4Free system with one pool:
 pool:  My320POOL
