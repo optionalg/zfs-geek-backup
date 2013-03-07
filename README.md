@@ -15,10 +15,10 @@ zfs-geek-backup can do incremental backups to removable drives, each backup driv
 	state:	ONLINE
 	scan:	scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
 	config:
-	My320POOL			ONLINE	0	0	0
-	mirror-0ONLINE				0	0	0
-	ada1ONLINE					0	0	0
-	ada0ONLINE					0	0	0
+	My320POOL		ONLINE		0	0	0
+	mirror-0		ONLINE		0	0	0
+	ada1			ONLINE		0	0	0
+	ada0			ONLINE		0	0	0
 	errors: No known data errors
 
 ### I have created several datasets ###
@@ -64,14 +64,14 @@ You may now swap the backup drive and take it off site.
 ## Tips ##
 
 ### See what you have on a backup drive ###
-    
+
     zpool import zfsgeekbackup
     zfs list -H -o name -t snapshot | grep zfsgeekbackup
     ls /mnt/zfsgeekbackup/.zfs/snapshot
     zpool export zfsgeekbackup
-        
-### Get rid of all snapshots on zfsgeekbackup ### 
-    
+
+### Get rid of all snapshots on zfsgeekbackup ###
+
     zpool import zfsgeekbackup
     zfs list -H -o name -t snapshot | grep zfsgeekbackup | xargs -n1 zfs destroy
     zpool export zfsgeekbackup
