@@ -1,89 +1,101 @@
-# ZFS-Geek-Backup #
+# Using Rsync and ZFS snapshots... #
+zfs-geek-backup can do incremental backups to removable drives, each backup drive is a full image plus snapshots.
 
-Using rsync and ZFS snapshots you can do incremental backups to removable drives. Each drive will have a full image and snapshots.
+## My setup ##
 
-# My setup #
+- [Hard drive dock](http://www.google.ca/search?q=hard+drive+dock)
+- Assortment of hard drives, new or used
+- [NAS4Free](http://www.nas4free.org/ "NAS4Free")
 
-I use a [hard drive dock](http://www.google.ca/search?q=hard+drive+dock) and 5 old used hard drives. Each of the five drives has been configured as a zfs pool named MyBackup.
+## Instructions ##
 
-I have a NAS4Free system with one pool:
-pool:  My320POOL
-state: ONLINE
-scan:  scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
-config:
-My320POOL   ONLINE       0     0     0
-mirror-0    ONLINE       0     0     0
-ada1        ONLINE       0     0     0
-ada0        ONLINE       0     0     0
-errors: No known data errors
+### I have a basic NAS4Free system with one ZFS pool
 
-I have created several Datasets:
-NAME USED AVAIL  REFER  MOUNTPOINT
-My320POOL           184G   110G  44.5K  /mnt/My320POOL
-My320POOL/data     1.48G   110G  1.47G  /mnt/My320POOL/data
-My320POOL/install  11.1G   110G  11.1G  /mnt/My320POOL/install
-My320POOL/music    7.62G   110G  7.62G  /mnt/My320POOL/music
-My320POOL/photo    14.5G   110G  14.5G  /mnt/My320POOL/photo
-My320POOL/video     149G   110G   149G  /mnt/My320POOL/video
+	pool:	My320POOL
+	state:	ONLINE
+	scan:	scrub repaired 0 in 1h12m with 0 errors on Fri Mar  1 12:09:30 2013
+	config:
+	My320POOL			ONLINE	0	0	0
+	mirror-0ONLINE				0	0	0
+	ada1ONLINE					0	0	0
+	ada0ONLINE					0	0	0
+	errors: No known data errors
 
-Choose which datasets to backup:
-DATASETS=('data' 'photo') // Backup data and photo
-Other Examples:
-DATASETS=('photo') // Just photo
-DATASETS=('data' 'install' 'music' 'photo' 'video') // All my datasets
+### I have created several datasets ###
 
-The only other change you'll need to make is:
-SOURCEPOOL=My320POOL
-Example:
-SOURCEPOOL=TANK
+	NAME					  USED	   AVAIL	REFER	MOUNTPOINT
+	My320POOL				  184G		110G	44.5K	/mnt/My320POOL
+	My320POOL/data			 1.48G		110G	1.47G	/mnt/My320POOL/data
+	My320POOL/install		 11.1G		110G	11.1G	/mnt/My320POOL/install
+	My320POOL/music			 7.62G		110G	7.62G	/mnt/My320POOL/music
+	My320POOL/photo			 14.5G		110G	14.5G	/mnt/My320POOL/photo
+	My320POOL/video			149.0G		110G	 149G	/mnt/My320POOL/video
 
+### To use zfs-geek-backup with a similar setup follow these steps ###
 
-NOTES N' TIPS
-
-See what you have on a backup drive:
-  zpool import MyBackup
-  zfs list -H -o name -t snapshot | grep MyBackup
-  ls /mnt/MyBackup/.zfs/snapshot
-  zpool export MyBackup
-
-Get rid of all snapshots on MyBackup:
-  zpool import MyBackup
-  zfs list -H -o name -t snapshot | grep MyBackup | xargs -n1 zfs destroy
-  zpool export MyBackup
-
-Get a clean start on an existing MyBackup drive:
-  zpool import MyBackup
-  zpool destroy MyBackup
-  zpool create MyBackup da1
-  zpool export MyBackup
-
-Add yet another drive to your collection of backup drives:
-  zpool create MyBackup da1
-  zpool export MyBackup
-  
-  *It's da1 on my machine but will likely be something else on yours
-
-You may run the backup at anytime:
-./zfs-geek-backup.sh     //not so quiet
-./zfs-geek-backup.sh -q  //quiet, only errors will output
-./zfs-geek-backup.sh --dry-run  //adds --dry-run to the rsync commandline
+1. Attach the external drive and create a pool named **zfsgeekbackup**
+1. Copy zfs-geek-backup.sh and open it for editing.
+2. Edit the pool and dataset variables `SOURCEPOOL=My320POOL` and `DATASETS=('data' 'photo')`
+3. Save and execute the script
 
 
-Overview of what happens:
+### You may run the backup at anytime ###
 
-You plug in one of the backup drives and your system sees it as a device but zfs ignores it.
-You (or cron) run the backup script.
-It imports the MyBackup pool
-It creates a temporary dataset named TEMPzfsGEEKbackup
-It makes temporary snapshots of selected datasets eg: DATASETS=('data' 'photo')
-It makes a temporary clone of each snapshot under TEMPzfsGEEKbackup eg: TEMPzfsGEEKbackup/photo
-It rsyncs the incremental changes from TEMPzfsGEEKbackup to MyBackup
-It destroys the clones that it created
-It destroys the TEMPzfsGEEKbackup dataset that it created
-It destroys the temporary snapshots that it created
-It creates a snapshot on MyBackup eg: MyBackup@2013-03-05_01h52m48s
-It exports the MyBackup pool
+    ./zfs-geek-backup.sh //not so quiet
+    ./zfs-geek-backup.sh -q  //quiet, only errors will output
+    ./zfs-geek-backup.sh --dry-run  //adds --dry-run to the rsync commandline
 
-You may do this backup at any time. Rsync is not copying your live data its copying a snapshot clone. However I think it's best to run as a cron job at 3 a.m. or so.
+### Overview - What happens? ###
+
+- You plug in one of the backup drives and your system sees it as a device but ZFS ignores it. You, or cron, run the backup script.
+- It imports the zfsgeekbackup pool
+- It creates a temporary dataset named TEMPzfsGEEKbackup
+- It makes temporary snapshots of your selected datasets eg: DATASETS=('data' 'photo')
+- It makes a temporary clone under TEMPzfsGEEKbackup of each snapshot eg: TEMPzfsGEEKbackup/photo
+- It Rsyncs the incremental changes from TEMPzfsGEEKbackup to zfsgeekbackup
+- It destroys the clones that it created
+- It destroys the TEMPzfsGEEKbackup dataset that it created
+- It destroys the temporary snapshots that it created
+- It creates a snapshot on zfsgeekbackup eg: zfsgeekbackup@2013-03-05_01h52m48s
+- It exports the zfsgeekbackup pool
 
 You may now swap the backup drive and take it off site.
+
+## Tips ##
+
+### See what you have on a backup drive ###
+    
+    zpool import zfsgeekbackup
+    zfs list -H -o name -t snapshot | grep zfsgeekbackup
+    ls /mnt/zfsgeekbackup/.zfs/snapshot
+    zpool export zfsgeekbackup
+        
+### Get rid of all snapshots on zfsgeekbackup ### 
+    
+    zpool import zfsgeekbackup
+    zfs list -H -o name -t snapshot | grep zfsgeekbackup | xargs -n1 zfs destroy
+    zpool export zfsgeekbackup
+    
+### Get a clean start on an existing zfsgeekbackup drive ###
+    
+    zpool import zfsgeekbackup
+    zpool destroy zfsgeekbackup
+    zpool create zfsgeekbackup da1
+    zpool export zfsgeekbackup
+    
+### Add another drive to your collection of backup drives ###
+    
+    zpool create zfsgeekbackup da1
+    zpool export zfsgeekbackup
+      
+### It's da1 on my machine but will likely be something different on yours ###
+Immediately after you insert a drive into the dock your system should see it and spit out some messages like these below. Using the `dmesg | tail` command I can see that my drive is at da1. So... `zpool create zfsgeekbackup da1` be **careful** now.
+    
+    	nas4free# dmesg | tail
+    	da1 at umass-sim1 bus 1 scbus9 target 0 lun 0
+    	da1: WDC WD50 03ABYX-01WERA0 Fixed Direct Access SCSI-2 device
+    	da1: 40.000MB/s transfers
+    	da1: 476940MB (976773168 512 byte sectors: 255H 63S/T 60801C)
+    	nas4free#_
+    
+

@@ -24,7 +24,7 @@ DATASETS=('data' 'photo')
 
 # These variables should work as is
 MYMOUNTPOINT=/mnt
-TARGETPOOL=MyBackup
+TARGETPOOL=zfsgeekbackup
 NOW=$(date +"%Y-%m-%d_%Hh%Mm%Ss")
 RSYNCOPTIONS="-rtv"
 VERBOSE=1
@@ -47,11 +47,21 @@ function TEMPzfsGEEKdatasetCreate {
   for t in ${DATASETS[@]}
   do
     zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot
-    test "$?" -ne "0" && echo "Failed: zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot" && exit 1
-    MyEcho "$? - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+	RETVAL="$?"
+    if [ "$?" -ne "0" ]
+	  then echo "Failed: zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+           exit 1
+      else
+	       MyEcho "$RETVAL - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+	fi
     zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t
-    test "$?" -ne "0" && echo "Failed: zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t" && exit 1
-    MyEcho "$? - zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t"
+	RETVAL="$?"
+    if [ "$RETVAL" -ne "0" ]
+	  then echo "Failed: zfs clone $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot $SOURCEPOOL/TEMPzfsGEEKdataset/$t"
+           exit 1
+      else
+	       MyEcho "$RETVAL - zfs snapshot $SOURCEPOOL/$t@TEMPzfsGEEKsnapshot"
+	fi
   done
 }
 
